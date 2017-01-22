@@ -1,23 +1,18 @@
 import urllib.request
 import re
 
-prop = 			[	['<div',	'class="sold-property-listing">',											'</div>'],\
-					['<span',	'class="item-result-meta-attribute-is-bold item-link">',					'</span>'],\
-					['<span',	'class="item-link">',														'</span>'],\
-					['<div',	'class="sold-property-listing__size">', 									'</div>'],\
-					['<div',	'class="sold-property-listing__price">',									'</div>'],\
-					['<div',	'class="sold-property-listing__price-change">',								'</div>'],\
-					['<div',	'class="sold-property-listing__broker">'									'</div>']\
-				]
-				
-pSize = 		[	['<div',	'class="sold-property-listing__subheading sold-property-listing--left">',	'</div>'],\
-					['<div',	'class="sold-property-listing__fee">', 										'</div>']\
-				]
-				
-pPrice =		[	['<span',	'class="sold-property-listing__subheading sold-property-listing--left">',	'</span>'],\
-					['<div',	'class="sold-property-listing__sold-date sold-property-listing--left">',	'</div>'],\
-					['<div',	'class="sold-property-listing__price-per-m2 sold-property-listing--left">',	'</div>']\
-				]
+prop = 			[	['div',	'class="sold-property-listing">'],\
+					['span',	'class="item-result-meta-attribute-is-bold item-link">'],\
+					['span',	'class="item-link">'],\
+					['div',	'class="sold-property-listing__price-change">'],\
+					['div',	'class="sold-property-listing__broker">'],\
+					['div',	'class="sold-property-listing__subheading sold-property-listing--left">'],\
+					['div',	'class="sold-property-listing__fee">'],\
+					['span',	'class="sold-property-listing__subheading sold-property-listing--left">'],\
+					['div',	'class="sold-property-listing__sold-date sold-property-listing--left">'],\
+					['div',	'class="sold-property-listing__price-per-m2 sold-property-listing--left">']\
+				]				
+
 
 class hemnet:
 	
@@ -43,55 +38,58 @@ class hemnet:
 		f = open(file, 'w+')
 		urllib.request.urlretrieve(self.url, file)
 		f.close()
+	
+	def brackets(self, id):
+		return ['<'+id+' ','</'+id+'>'] 
 		
-	# def parse(self, page = 1):
-		# html = open("hemnetDump.html")
-		# data = open("data.csv")
-		# next = re.find("href=.+>Nästa", html.read())
-		
-		# for 
 	def parse(self):
 		html = open("hemnetDump.html", 'r')
 		data = open("data.csv", 'w+')
 		
-		objects = re.split((prop[0][0]+' '+prop[0][1]), html.read())
+		b = self.brackets(prop[0][0])
+		objects = re.split(b[0]+prop[0][1], html.read())
 		
 		objects = objects[1:]
 					
 		i = 0
 		for obj in objects:
-			i += 1
-			data.write('############ NEW OBJECT ('+str(i)+')##################')
-			data.write(obj)
-			data.write('\n\n\n\n\n')
-			data.write('EXTRACTED DATA')
+			i += 1			
 			
-			for p in range(1, len(prop)-1):
-				s = re.split(prop[p][0]+' '+prop[p][1], obj, re.S)
-				if(len(s) >1):
-					s = self.htmlParser(prop[p][0][1:], s[1])
-					if(len(s) > 1):
-						data.write('\n' + s[0])
-			
-			data.write('\n\n\n\n\n')
+			for p in prop[1:]:
+				content = self.htmlParser(obj, p)
+				if(len(content)>1):
+					data.write(content[0])
+					data.write('\n')
 			break
 			
 		html.close()
 		data.close()
 	
+	def xtrctSubCat(self, list, s):
+		res = []		
+		for p in list:
+			tmp = re.split(p[0]+' '+p[1], s, re.S)
+			if(len(tmp)>1):
+				tmp = self.htmlParser(p[0][1:], tmp[1])
+				if(len(tmp) > 1):
+					res.append(tmp(1))	
+		return res
 		
-	def htmlParser(self, enc, text):	
+
+	def htmlParser(self, text, element):	
 		occ = 0
-		
-		for i in range(0, len(text)-1):
-			if(text[i:(i+len(enc)+1)] == ('<'+enc)):
+		enc = self.brackets(element[0])
+		s = re.split(element[1], text, re.S)
+		s = s[1]
+		for i in range(0, len(s)-1):
+			if(s[i:(i+len(enc[0]))] == (enc[0])):
 				occ += 1;
-			elif(text[i:(i+len(enc)+2)] == ('</' + enc)):
+			elif(s[i:(i+len(enc[1]))] == (enc[1])):
 				if(occ == 0):
-					return [text[:(i-1)], text[(i):]]
+					return [s[:(i-1)].strip(), s[(i):]]
 				else:
 					occ -= 1
-		return [text]
+		return [s]
 
 
 d = hemnet("18042", "bostadsratt", 65, 3)
